@@ -167,7 +167,7 @@ def homepage(request):
         s += formforkeys(request) 
     else:
         if df.shape[0]==0:
-            s += f"""<P>The server no longer has the data for this user (it is deleted within 7 days of last being accessed). 
+            s += f"""<P>The server no longer has the data for this user (it is deleted 6 hours after it was last loaded, or after 3 hours without any page views). 
             You can load new data from Octopus or n3rgy on the <A HREF="{urladmin}">Admin Page</A>. </P>
             """
         else:
@@ -366,8 +366,8 @@ def adminPage(request):
                 else:
                     s += 'If you want to see these, remove the hidegaps=1 flag in the url.'
             s += f'''
-                <P>Any data will be deleted from the server up to 7 days after it is last updated. You can delete the data manually 
-                at any point using the following buttons.</P>
+                <P>Any data will be deleted from the server 6 hours after it was last loaded, or sooner if you don't view any pages 
+                for 3 hours. You can delete the data manually at any point using the following buttons.</P>
                 <form action="{url}" method="post">
             <input type="submit" name="delete" value="Delete Data">
             </form> <BR><BR> '''
@@ -446,8 +446,8 @@ def adminPage(request):
                     s += '''
                             <P>You can load the latest data to the server using the buttons below. <B>Clicking this button indicates
                             that you are happy for your data to be stored on the server</B>. Your security key will not be stored, nor will any 
-                            other information that could be used to identify you. Your data will be deleted automatically within 7 days of you last 
-                            loading data, and you can delete it manually at any time on this page.
+                            other information that could be used to identify you. Your data will be deleted automatically 6 hours after you last 
+                            load it, or sooner if you don't view any pages for 3 hours, and you can delete it manually at any time on this page.
                             <P>Note that at the moment each of these buttons will take about 10 seconds to load in the data. I will be working on optimising 
                             this over the coming days. </P>
                             <form onsubmit="if( _formConfirm_submitted == false ){ _formConfirm_submitted = true;return true }else{ return false;  }" '''
@@ -464,8 +464,8 @@ def adminPage(request):
                 s += '''
                         <P>You can load the latest data to the server using the buttons below. <B>Clicking this button indicates
                         that you are happy for your data to be stored on the server</B>. Your security key will not be stored, nor will any 
-                        other information that could be used to identify you. Your data will be deleted automatically within 7 days of you last 
-                        loading data, and you can delete it manually at any time on this page.
+                        other information that could be used to identify you. Your data will be deleted automatically 6 hours after you last 
+                        load it, or sooner if you don't view any pages for 3 hours, and you can delete it manually at any time on this page.
                         <P>Note that at the moment each of these buttons will take about 10 seconds to load in the data. I will be working on optimising 
                         this over the coming days. </P>
                         <form onsubmit="if( _formConfirm_submitted == false ){ _formConfirm_submitted = true;return true }else{ return false;  }" '''
@@ -514,8 +514,8 @@ def adminPage(request):
                     if numvalid>0:   
                         s += '''<P>You can load the latest data to the server using the buttons below. <B>Clicking this button indicates 
                                 that you are happy for your data to be stored on the server</B>. Your security key will not be stored, nor will any 
-                                other information that could be used to identify you. Your data will be deleted automatically within 7 days of you last 
-                                loading data, and you can delete it manually at any time on this page.
+                                other information that could be used to identify you. Your data will be deleted automatically 6 hours after you last 
+                                load it, or sooner if you don't view any pages for 3 hours, and you can delete it manually at any time on this page.
                                 <P>Note that at the moment each of these buttons will take about 10 seconds to load in the data. I will be working on optimising 
                                 this over the coming days. </P>
                                 <form onsubmit="if( _formConfirm_submitted == false ){ _formConfirm_submitted = true;return true }else{ return false;  }" '''
@@ -531,8 +531,8 @@ def adminPage(request):
             else:
                 s += '''<P>You can load the latest data to the server using the buttons below. <B>Clicking this button indicates 
                         that you are happy for your data to be stored on the server</B>. Your security key will not be stored, nor will any 
-                        other information that could be used to identify you. Your data will be deleted automatically within 7 days of you last 
-                        loading data, and you can delete it manually at any time on this page.
+                        other information that could be used to identify you. Your data will be deleted automatically 6 hours after you last 
+                        load it, or sooner if you don't view any pages for 3 hours, and you can delete it manually at any time on this page.
                         <P>Note that at the moment each of these buttons will take about 10 seconds to load in the data. I will be working on optimising 
                         this over the coming days. </P>
                         <form onsubmit="if( _formConfirm_submitted == false ){ _formConfirm_submitted = true;return true }else{ return false;  }" '''

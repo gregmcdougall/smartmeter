@@ -585,6 +585,20 @@ def get_sm_id(request, createifnone=False):
         return str(uuid.uuid4())
 
 
+def get_region(request, default=None):
+    """Region letter from the url if given, else the region of this visitor's loaded data (as reported
+    by Octopus), else default."""
+    if request.GET.get('region'):
+        return request.GET.get('region')
+    smid = get_sm_id(request)
+    if smid is not None:
+        s = "select region from sm_accounts where session_id=%s and active='1' and region is not null order by type_id limit 1"
+        rows = loadDataFromDb(s, params=(smid,))
+        if len(rows):
+            return rows[0][0]
+    return default
+
+
 def loadSmData(request, type_id):
     smid = get_sm_id(request, createifnone=True)
     source, key = get_key(request)
@@ -669,7 +683,7 @@ def parsetariff(request, tariff, type_id, vat, **kwargs):
         pricestr = f"select period_id, {pricestr} from periods"
         return isfixed, pricestr
     else:
-        region = kwargs.get('region', None) or request.GET.get('region')
+        region = kwargs.get('region', None) or get_region(request)
         s = "select var_id, granularity_id from sm_variables where product=%s and region=%s and type_id=%s"
         s = loadDataFromDb(s, params=(tariff, region, type_id))
         if len(s):

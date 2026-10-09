@@ -9,7 +9,8 @@ from myutils.utils import (getConnection, loadDataFromDb, UserError, esc)
 from myutils.smutils import (adj_url, sidebarhtml, 
                             getRegion, getregions, menuitems, octopusmeters, n3rgymeters,
                             loadSmData, deleteSmData, get_sm_id, isdemo, sm_log,
-                            get_type_id, getmode, create_sm_page, getTariff)
+                            get_type_id, getmode, create_sm_page, getTariff,
+                            get_key, clean_key, set_key_cookie, KEY_SOURCES)
 
 
 
@@ -28,8 +29,11 @@ def checkRequest(request):
         url = url.replace(choice, f'{choice}/home')
         return redirect(url)
 
-    if 'MAC' in request.GET:
-        return redirect(adj_url(url, ['MAC'],[('n3rgy', request.GET.get('MAC'))]))
+    # Old links carry the key in the url: move it into a cookie and redirect to the url without it
+    for param, source in [('octopus', 'octopus'), ('n3rgy', 'n3rgy'), ('MAC', 'n3rgy')]:
+        if param in request.GET:
+            output = redirect(adj_url(url, [param], []))
+            return set_key_cookie(output, request, source, clean_key(request.GET.get(param)))
 
     if request.GET.get('tariff','ignore')=='GO-18-06-12':
         region = request.GET['region']
@@ -230,6 +234,17 @@ def formforkeys(request):
 def adminPage(request):
     url = request.get_full_path()
     if request.method=='POST':
+        if 'enterkey' in request.POST:
+            source = request.POST.get('source')
+            if source not in KEY_SOURCES:
+                raise UserError('Please choose Octopus or n3rgy as the source of your data.')
+            output = redirect(adj_url(url, ['source'], []))
+            return set_key_cookie(output, request, source, clean_key(request.POST.get('key')))
+        if 'forgetkey' in request.POST:
+            output = redirect(adj_url(url, ['mode'], []))
+            for k in KEY_SOURCES:
+                output.delete_cookie(k)
+            return output
         task = list(request.POST.keys())[0]
         if isdemo(request):
             raise UserError('You must use your n3rgy code or your octopus code to load or delete data. Click Back to return to the Admin screen.')
@@ -238,8 +253,8 @@ def adminPage(request):
             deleteSmData(smid)
             output = redirect(adj_url(url, [], [('mode','101')]))
             for k, v in request.COOKIES.items():
-                if k[:5]=='sm_id':
-                    output.set_cookie(k,  v, max_age=-1)
+                if k[:5]=='sm_id' or k in KEY_SOURCES:
+                    output.delete_cookie(k)
             return output
         
         if task == 'loadelectricity':
@@ -253,7 +268,7 @@ def adminPage(request):
         sm_log(request, 'admin', smid)
         mode = getmode(smid)
         output = redirect(adj_url(url, [], [('mode',mode)]))
-        key = 'sm_id_' + request.GET.get('octopus', request.GET.get('n3rgy',None))[-3:]
+        key = 'sm_id_' + get_key(request)[1][-3:]
         output.set_cookie(key,  smid, max_age=3600)
         return output
 
@@ -261,6 +276,8 @@ def adminPage(request):
     types = ['Electricity','Gas','Export']
     if 'source' in request.GET:
         source = request.GET.get('source')
+        if source not in KEY_SOURCES:
+            raise UserError('Please choose Octopus or n3rgy as the source of your data.')
         if source == 'octopus':
             sample = 'A-ABCD1234sk_live_BCmPlrj6LwktwfYvosMRePcd'
             s = '''
@@ -284,19 +301,19 @@ def adminPage(request):
             given further details before you do.</P>
 
             '''
-        url = adj_url(url, ['source','octopus','hash'], [])
         s += f"""
-                <form action="{url}" method="get">
+                <form action="{url}" method="post">
+                <input type="hidden" name="source" value="{source}">
                 <div class="form-group row">
                 <label for="inputEmail3" class="col-sm-2 col-form-label">Key</label>
                 <div class="col-sm-10">
-                <input type="text" class="form-control" name="{source}" value="{sample}">
+                <input type="text" class="form-control" name="key" placeholder="{sample}" autocomplete="off">
                 </div>
                 </div>
 
                 <div class="form-group row">
                 <div class="col-sm-10">
-                    <button type="submit" class="btn btn-primary">Check for data</button>
+                    <button type="submit" class="btn btn-primary" name="enterkey">Check for data</button>
                 </div>
                 </div>
             </form>
@@ -330,10 +347,13 @@ def adminPage(request):
 
 
     else:
-        source = 'Octopus' if 'octopus' in request.GET else 'n3rgy'
+        source = 'Octopus' if get_key(request)[0]=='octopus' else 'n3rgy'
         s += f"""
         <P>This is the Admin page for your account where you can see the data we have for you, and any additional data from 
         {source} that you may wish to load. You can also delete all your data from this server.  </P>
+        <P>Your {source} key is kept in a cookie in this browser for up to an hour, so that you can load data. It is never 
+        stored on the server or included in page addresses.</P>
+        <form action="{url}" method="post"><input type="submit" name="forgetkey" value="Forget my key"></form><BR>
         """
         if data.shape[0]>0:
             s += "<H4>Currently Loaded Data</H4>"
@@ -375,7 +395,7 @@ def adminPage(request):
 
 
         if source=='Octopus':
-            key = request.GET.get('octopus')
+            key = get_key(request)[1]
             check_before = request.GET.get('checkbefore', '0')
             if check_before == '1':
                 include_old = ('include_old' in request.GET)
@@ -457,7 +477,7 @@ def adminPage(request):
                 s += '&nbsp;&nbsp;&nbsp;'.join(j) + '</form><BR>'
         
         if source == 'n3rgy':
-            key = request.GET.get('n3rgy')
+            key = get_key(request)[1]
             n3adj = int(request.GET.get('n3adj','1'))
             check_before = request.GET.get('checkbefore', '0')
             if check_before == '1':
@@ -646,7 +666,7 @@ def gettingStartedPage(request):
     <LI>If you have an n3rgy data account (or want to get one - it is free), click 
     <A HREF="https://energy.guylipman.com/sm/admin?source=n3rgy" target="_blank">here</A>.</LI>
     <LI>If you don't have an Octopus or n3rgy account and just want to see the website using electricity consumption data for 
-    a made-up user, that is fine. If the url doesn't have any octopus or n3rgy key in it, it will be using the made-up user data.</LI>
+    a made-up user, that is fine. Until you enter an Octopus or n3rgy key, the site will be using the made-up user data.</LI>
     </UL> 
     <P>At this stage the website won't store anything, but will check with Octopus or n3rgy that your key is valid, 
     and let you know what data we can load. If you want then, you can click a button to load electricity consumption data, 
@@ -705,8 +725,8 @@ def gettingStartedPage(request):
 
     <H4>Frequently Asked Questions</H4>
 
-    <P><B>Why are there lots of parameters in the URL?</B> You will notice that the url will often contain a number of additional parameters, for example mode, tariffs and 
-    your octopus/n3rgy key. I do this to make it easy to see and change assumptions, for you to be able to bookmark particular 
+    <P><B>Why are there lots of parameters in the URL?</B> You will notice that the url will often contain a number of additional parameters, for example mode and tariffs 
+    (but never your octopus/n3rgy key, which is kept in a browser cookie instead). I do this to make it easy to see and change assumptions, for you to be able to bookmark particular 
     screens, and also for me to be able to replicate any issues you face.</P> 
 
 

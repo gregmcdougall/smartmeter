@@ -239,7 +239,7 @@ def consumptionPage(request, choice):
         table += '</TABLE>'  
 
     if 'chartscale' in request.GET:
-        c = request.GET.get('chartscale').split(',')
+        c = [float(x) for x in request.GET.get('chartscale').split(',')]  # numbers only, as it goes into a script
         chartscale = f'min: {c[0]}, '
         if len(c)>1:
             chartscale += f'max: {c[1]}, '
@@ -455,7 +455,7 @@ def costPage(request, choice):
         description += 'All costs include 5% VAT and exclude standing charges. '
 
     if 'chartscale' in request.GET:
-        c = request.GET.get('chartscale').split(',')
+        c = [float(x) for x in request.GET.get('chartscale').split(',')]  # numbers only, as it goes into a script
         chartscale = f'min: {c[0]}, '
         if len(c)>1:
             chartscale += f'max: {c[1]}, '
@@ -734,7 +734,7 @@ def netimportPage(request):
         table += '</TABLE>'  
     #raise Exception
     if 'chartscale' in request.GET:
-        c = request.GET.get('chartscale').split(',')
+        c = [float(x) for x in request.GET.get('chartscale').split(',')]  # numbers only, as it goes into a script
         chartscale = f'min: {c[0]}, '
         if len(c)>1:
             chartscale += f'max: {c[1]}, '

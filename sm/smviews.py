@@ -5,7 +5,7 @@ import sys
 import pandas as pd
 
 from myutils.smutils import sm_log
-from myutils.utils import error_response
+from myutils.utils import error_response, esc
 from .smprod import (adminPage, homepage, moreinfo,
                              checkRequest, gettingStartedPage, getmode, otherPage)
 from .smcharts import (consumptionPage, costPage, emissionsPage, netimportPage)
@@ -110,7 +110,7 @@ def index(request, choice):
         if choice=='smidcheck':
             s = ''
             for k, v in request.COOKIES.items():
-                s+= f'{k}: {v}<BR>'
+                s+= f'{esc(k)}: {esc(v)}<BR>'
             return HttpResponse(s)
 
         choice = checkRequest(request)

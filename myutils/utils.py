@@ -41,6 +41,12 @@ def loadDataFromDb(sqlstr, returndf=False, params=None):
     conn.close()
     return output
 
+def esc(value):
+    """HTML-escape a value, eg one taken from the request, before putting it in a page."""
+    import html
+    return html.escape(str(value))
+
+
 class UserError(ValueError):
     """An error whose message is safe and useful to show to the visitor, eg invalid input.
     Any other exception is treated as internal, and only its traceback is logged."""

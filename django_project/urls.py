@@ -25,5 +25,4 @@ urlpatterns = [
     re_path(r'forecasts/*', forecastviews.index, name='forecasts'),
     path('sm/<slug:choice>', smviews.index, name='sm'),
     path('sm/', smviews.home, name='smhome'),
-    path('smsql/', smviews.runsql, name='smsql')
 ]

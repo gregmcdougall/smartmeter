@@ -541,13 +541,39 @@ def deleteSmData(smid):
     """
     _ = loadDataFromDb(s, params=(smid,))
 
+# The visitor's Octopus or n3rgy key is kept in an HttpOnly cookie named after its source, never in
+# URLs, so that it doesn't end up in server logs, browser history or bookmarks
+KEY_SOURCES = ['octopus', 'n3rgy']
+KEY_COOKIE_AGE = 3600
+
+def get_key(request):
+    """Return (source, key) for the key stored in this browser's cookie, or (None, None)."""
+    for source in KEY_SOURCES:
+        if request.COOKIES.get(source):
+            return source, request.COOKIES[source]
+    return None, None
+
+def clean_key(key):
+    """Validate a key as typed by the visitor: an Octopus account number plus API key, or an n3rgy MAC."""
+    import re
+    key = (key or '').strip()
+    if not re.fullmatch(r'[A-Za-z0-9_-]{8,80}', key):
+        raise UserError('That key does not look right - it should only contain letters, numbers, - and _, with no spaces.')
+    return key
+
+def set_key_cookie(response, request, source, key):
+    response.set_cookie(source, key, max_age=KEY_COOKIE_AGE, httponly=True, samesite='Lax', secure=request.is_secure())
+    for other in KEY_SOURCES:
+        if other != source:
+            response.delete_cookie(other)
+    return response
+
 def isdemo(request):
-    key = request.GET.get('octopus', request.GET.get('n3rgy',None))
-    return (key is None)
+    return get_key(request)[1] is None
 
 
 def get_sm_id(request, createifnone=False):
-    key = request.GET.get('octopus', request.GET.get('n3rgy',None))
+    key = get_key(request)[1]
     demokey = 'e4280c7d-9d06-4bbe-87b4-f9e106ede788'
     if (key is None) or (key[-6:] in ['RMePtm', '64E78B']):
         return demokey
@@ -564,19 +590,18 @@ def get_sm_id(request, createifnone=False):
 
 def loadSmData(request, type_id):
     smid = get_sm_id(request, createifnone=True)
-    if ('n3rgy' in request.GET):
-        key = request.GET.get('n3rgy')
+    source, key = get_key(request)
+    if source == 'n3rgy':
         region = None
         n3adj = int(request.GET.get('n3adj','1'))
         df = getDataFromN3RGY(key, type_id, n3adj)
         source_id=0
-    elif 'octopus' in request.GET:
-        key = request.GET.get('octopus')
+    elif source == 'octopus':
         meterorder = int(request.GET.get('meterorder','-1'))
         df, region = octopusconsumption(key, type_id, meterorder=meterorder, request=request)
         source_id=1
     else:
-        raise UserError('MAC, n3rgy or octopus keys are not provided')
+        raise UserError('Enter your Octopus or n3rgy key on the Admin page first.')
     if (df is None) or (df.shape[0]==0):
         estr = 'No {} data retrieved from {} - go back to Admin page, check key and try again.'
         estr = estr.format(['Electricity Consumption', 'Gas Consumption','Export'][type_id],

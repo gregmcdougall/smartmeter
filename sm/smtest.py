@@ -8,7 +8,7 @@ import datetime
 import requests
 import json
 
-from myutils.utils import (getConnection, loadDataFromDb, sql_date)
+from myutils.utils import (getConnection, loadDataFromDb, sql_date, UserError)
 from myutils.smutils import (adj_url, sidebarhtml, getregions, get_sm_id, 
                             quantitystr, parsetariff, create_sm_page, get_type_id)
 
@@ -1479,7 +1479,7 @@ def calcprofileprice(request, options):
     if len(s):
         var_id = q[0][0]
     else:
-        raise Exception("No data for tariff {} and region {}".format('AGILE-18-02-21', region))
+        raise UserError("No data for tariff {} and region {}".format('AGILE-18-02-21', region))
 
     q = f"""select p.period_id, p.local_date, p.local_time, value from sm_hh_variable_vals v
         inner join sm_periods p on v.period_id=p.period_id

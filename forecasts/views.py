@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import json
 import pickle
-from myutils.utils import getConnection, loadDataFromDb
+from myutils.utils import getConnection, loadDataFromDb, error_response, UserError
 
 
 
@@ -29,7 +29,10 @@ def get_prices(region, product, after_date):
 def inner(request):
     region = request.GET.get('region', 'W').upper()
     # Normalise to an ISO timestamp, since it is formatted into the queries below
-    before = pd.Timestamp(request.GET.get('before', pd.Timestamp.now().isoformat())).isoformat()
+    try:
+        before = pd.Timestamp(request.GET.get('before', pd.Timestamp.now().isoformat())).isoformat()
+    except ValueError:
+        raise UserError('Invalid before - it should be a datetime like 2020-12-31T12:00')
     ph = ('ph' in request.GET)
     v2 = (pd.Timestamp(before) > pd.Timestamp('2024-06-01T00:00'))
     slope = float(request.GET.get('slope', '80'))
@@ -183,7 +186,4 @@ def index(request):
         template = inner(request)
         return HttpResponse(template)
     except Exception as err:    
-        import traceback
-        errstr = str(err) + '<BR>'
-        errstr += '<BR>'.join([x for x in traceback.format_exc().splitlines()])
-        return HttpResponse(errstr)
+        return error_response(err)

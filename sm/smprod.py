@@ -5,7 +5,7 @@ import sys
 import pandas as pd
 import numpy as np
 
-from myutils.utils import (getConnection, loadDataFromDb)
+from myutils.utils import (getConnection, loadDataFromDb, UserError)
 from myutils.smutils import (adj_url, sidebarhtml, 
                             getRegion, getregions, menuitems, octopusmeters, n3rgymeters,
                             loadSmData, deleteSmData, get_sm_id, isdemo, sm_log,
@@ -232,7 +232,7 @@ def adminPage(request):
     if request.method=='POST':
         task = list(request.POST.keys())[0]
         if isdemo(request):
-            raise Exception('You must use your n3rgy code or your octopus code to load or delete data. Click Back to return to the Admin screen.')
+            raise UserError('You must use your n3rgy code or your octopus code to load or delete data. Click Back to return to the Admin screen.')
         if task == 'delete':
             smid = get_sm_id(request)
             deleteSmData(smid)
@@ -380,7 +380,7 @@ def adminPage(request):
             if check_before == '1':
                 include_old = ('include_old' in request.GET)
                 if request.GET.get('includeprice','0')=='1':
-                    raise Exception("includeprice flag no longer handled")
+                    raise UserError("includeprice flag no longer handled")
                     #df = octopusmeters(key, getprices=True, include_old=include_old, gql=False)
                 else:
                     if request.GET.get('gqlaccounts', '0') == '1':

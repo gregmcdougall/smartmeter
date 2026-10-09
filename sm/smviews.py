@@ -5,6 +5,7 @@ import sys
 import pandas as pd
 
 from myutils.smutils import sm_log
+from myutils.utils import error_response
 from .smprod import (adminPage, homepage, moreinfo,
                              checkRequest, gettingStartedPage, getmode, otherPage)
 from .smcharts import (consumptionPage, costPage, emissionsPage, netimportPage)
@@ -92,10 +93,7 @@ def runsql(request):
             return HttpResponse('Too much data to return')
         return HttpResponse(output)
     except Exception as err:    
-        import traceback
-        errstr = str(err) + '<BR>'
-        errstr += '<BR>'.join([x for x in traceback.format_exc().splitlines()])
-        return HttpResponse(errstr)
+        return error_response(err)
 
 def bot_to_reject(request):
     bots = ['SemrushBot', 'AhrefsBot', 'PetalBot', 'Bot']
@@ -126,10 +124,7 @@ def index(request, choice):
             output = HttpResponse(output)    
         return output
     except Exception as err:    
-        import traceback
-        errstr = str(err) + '<BR>'
-        errstr += '<BR>'.join([x for x in traceback.format_exc().splitlines()])
-        return HttpResponse(errstr)
+        return error_response(err)
 
 
 

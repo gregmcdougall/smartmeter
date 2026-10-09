@@ -41,28 +41,56 @@ def loadDataFromDb(sqlstr, returndf=False, params=None):
     conn.close()
     return output
 
+class UserError(ValueError):
+    """An error whose message is safe and useful to show to the visitor, eg invalid input.
+    Any other exception is treated as internal, and only its traceback is logged."""
+
+
+def error_response(err):
+    """Response for an exception raised while handling a request; call from inside the except block."""
+    import html
+    import logging
+    import traceback
+    from django.conf import settings
+    from django.http import HttpResponse
+    if isinstance(err, UserError):
+        return HttpResponse(html.escape(str(err)), status=400)
+    logging.getLogger(__name__).exception('Error handling request')
+    if settings.DEBUG:
+        errstr = html.escape(str(err)) + '<BR>'
+        errstr += '<BR>'.join(html.escape(x) for x in traceback.format_exc().splitlines())
+        return HttpResponse(errstr, status=500)
+    return HttpResponse('Sorry, something went wrong. Please try again later.', status=500)
+
+
 # Validators for user-supplied values that have to be formatted into SQL text, because they go into
-# query fragments that are composed before execution. Each returns the value if valid, else raises ValueError.
+# query fragments that are composed before execution. Each returns the value if valid, else raises UserError.
 
 def sql_uuid(value):
     import uuid
     try:
         return str(uuid.UUID(str(value)))
     except ValueError:
-        raise ValueError('Invalid session id')
+        raise UserError('Invalid session id')
 
 def sql_date(value):
     import re
-    if not (isinstance(value, str) and re.fullmatch(r'\d{4}[-/]\d{2}[-/]\d{2}', value)):
-        raise ValueError('Invalid date - dates should be in the format yyyy-mm-dd')
-    datetime.date(int(value[:4]), int(value[5:7]), int(value[8:10]))
+    try:
+        if not (isinstance(value, str) and re.fullmatch(r'\d{4}[-/]\d{2}[-/]\d{2}', value)):
+            raise ValueError
+        datetime.date(int(value[:4]), int(value[5:7]), int(value[8:10]))
+    except ValueError:
+        raise UserError('Invalid date - dates should be in the format yyyy-mm-dd')
     return value
 
 def sql_month(value):
     import re
-    if not (isinstance(value, str) and re.fullmatch(r'\d{4}-\d{2}', value)):
-        raise ValueError('Invalid month - months should be in the format yyyy-mm')
-    datetime.date(int(value[:4]), int(value[5:7]), 1)
+    try:
+        if not (isinstance(value, str) and re.fullmatch(r'\d{4}-\d{2}', value)):
+            raise ValueError
+        datetime.date(int(value[:4]), int(value[5:7]), 1)
+    except ValueError:
+        raise UserError('Invalid month - months should be in the format yyyy-mm')
     return value
 
 

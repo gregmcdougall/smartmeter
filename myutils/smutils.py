@@ -4,7 +4,7 @@ import datetime
 import requests
 import os
 
-from myutils.utils import loadDataFromDb, sql_uuid
+from myutils.utils import loadDataFromDb, sql_uuid, UserError
 
 START = '201901010000'    
 
@@ -103,7 +103,7 @@ def n3rgyrequest(url, key):
         r = requests.get(url=url, headers=headers )
         r = r.json()
     except Exception:
-        raise Exception('Problem loading data from n3rgy: {}, {}'.format(url, r))
+        raise UserError('Problem loading data from n3rgy - check your key and try again.')
     return r
 
 def n3adjtime(s, n3adj):
@@ -483,7 +483,7 @@ def getDataFromN3RGY(key, type_id, n3adj, first=None, last=None):
     else:
         r = n3rgyrequest(url, key)
         if 'availableCacheRange' not in r.keys():
-            raise Exception('Problem loading data from n3rgy: {}, {}'.format(url, r))
+            raise UserError('Problem loading data from n3rgy - check your key and try again.')
         daterange = r['availableCacheRange']
         daterange = (n3adjtime(daterange['start'], n3adj), n3adjtime(daterange['end'], n3adj))
 
@@ -576,12 +576,12 @@ def loadSmData(request, type_id):
         df, region = octopusconsumption(key, type_id, meterorder=meterorder, request=request)
         source_id=1
     else:
-        raise Exception('MAC, n3rgy or octopus keys are not provided')
+        raise UserError('MAC, n3rgy or octopus keys are not provided')
     if (df is None) or (df.shape[0]==0):
         estr = 'No {} data retrieved from {} - go back to Admin page, check key and try again.'
         estr = estr.format(['Electricity Consumption', 'Gas Consumption','Export'][type_id],
                             ['n3rgy', 'Octopus'][source_id])
-        raise Exception(estr)
+        raise UserError(estr)
 
     s = "select * from sm_accounts where session_id=%s and type_id=%s and active='1' limit 1"
     accounts = loadDataFromDb(s, returndf=True, params=(smid, type_id))
@@ -654,7 +654,7 @@ def parsetariff(request, tariff, type_id, vat, **kwargs):
             var_id = s[0][0]
             granularity_id = s[0][1]
         else:
-            raise Exception("No data for tariff {} and region {}".format(tariff, region))
+            raise UserError("No data for tariff {} and region {}".format(tariff, region))
         if granularity_id==0:
             pricestr = f"select period_id, value from sm_hh_variable_vals v where v.var_id={var_id} "
         elif granularity_id==1:

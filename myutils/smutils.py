@@ -271,7 +271,7 @@ def octopusmetersgql(key):
                     for j in i['meters']:
 
                         url = f"https://api.octopus.energy/v1/{commod}-meter-points/{i[mpan]}/meters/{j['serialNumber']}/consumption/"
-                        url += '?period_from=2021-01-01T00:00:00&period_to=2024-09-01T00:00:00&page_size=1'
+                        url += '?page_size=1'
                         r2 = requests.get(url, auth=(key[10:],'')).json()
                         if len(r2.get('results', [])):
                             lateststartdate = r2['results'][0]['interval_start']
@@ -292,8 +292,7 @@ def octopusmetersgql(key):
     meters = pd.DataFrame(meters, columns=cols)
     meters.sort_values('type_id', inplace=True)    
     a = pd.DatetimeIndex(meters.laststart.str[:16])
-    b = pd.TimedeltaIndex(np.where(meters.laststart.str.len()==25,1,0), 
-                              unit='h')
+    b = pd.to_timedelta(np.where(meters.laststart.str.len()==25,1,0), unit='h')
     meters.laststart = a-b    
     return meters
 
@@ -313,7 +312,7 @@ def octopusmeters(key, getprices=False, include_old=False, gql=False):
                 for i in points:
                     for j in i['meters']:
                         url = f"https://api.octopus.energy/v1/{commod}-meter-points/{i[mpan]}/meters/{j['serial_number']}/consumption/"
-                        url += '?period_from=2021-01-01T00:00:00&period_to=2024-09-01T00:00:00&page_size=1'
+                        url += '?page_size=1'
                         r2 = requests.get(url, auth=(key[10:],'')).json()
                         if len(r2.get('results', [])):
                             lateststartdate = r2['results'][0]['interval_start']
@@ -340,15 +339,14 @@ def octopusmeters(key, getprices=False, include_old=False, gql=False):
     meters = pd.DataFrame(meters, columns=cols)
     meters.sort_values('type_id', inplace=True)    
     a = pd.DatetimeIndex(meters.laststart.str[:16])
-    b = pd.TimedeltaIndex(np.where(meters.laststart.str.len()==25,1,0), 
-                              unit='h')
+    b = pd.to_timedelta(np.where(meters.laststart.str.len()==25,1,0), unit='h')
     meters.laststart = a-b     
     return meters
 
 def octopusconsumptionformpan(key, mpan, meter, type):
     import numpy as np
     dfs = []
-    url = 'https://api.octopus.energy/v1/{}-meter-points/{}/meters/{}/consumption/?period_from=2019-01-01T00:00:00&period_to=2024-09-01T00:00:00&page_size=10000'
+    url = 'https://api.octopus.energy/v1/{}-meter-points/{}/meters/{}/consumption/?period_from=2019-01-01T00:00:00&page_size=10000'
     url = url.format(type, mpan, meter)
     r = requests.get(url, auth=(key[10:],''))
     if len(r.json().get('results',[])):
@@ -360,8 +358,7 @@ def octopusconsumptionformpan(key, mpan, meter, type):
                 raise Exception
         dfs = pd.concat(dfs)    
         a = pd.DatetimeIndex(dfs.interval_start.str[:16])
-        b = pd.TimedeltaIndex(np.where(dfs.interval_start.str.len()==25,1,0), 
-                              unit='h')
+        b = pd.to_timedelta(np.where(dfs.interval_start.str.len()==25,1,0), unit='h')
         dfs['timestamp'] = a-b
         dfs = dfs[['timestamp','consumption']].reset_index()
         return dfs
@@ -449,7 +446,7 @@ def octopusconsumption(key, type_id, first=None, last=None, meterorder=-1, reque
     else:
         region = ''
     dfs = dfs.drop_duplicates('timestamp', keep='first')
-    idx = pd.date_range(START, '202409010000', freq='30T')  
+    idx = pd.date_range(START, pd.Timestamp.now('UTC').floor('30min').tz_localize(None), freq='30min')
     df = pd.DataFrame()
     df['timestamp'] = idx
     df = pd.DataFrame(idx, columns=['timestamp'])
@@ -489,7 +486,7 @@ def getDataFromN3RGY(key, type_id, n3adj, first=None, last=None):
 
 
     
-    idx = pd.date_range(START, daterange[1], freq='30T')  
+    idx = pd.date_range(START, daterange[1], freq='30min')
     df = pd.DataFrame()
     df['timestamp'] = idx
     df = pd.DataFrame(idx, columns=['timestamp'])

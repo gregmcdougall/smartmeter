@@ -350,7 +350,7 @@ def savetocsv(request, type_id):
     start = sql_date(start)
     end = request.POST.get('enddate')    
     if end in ['yyyy/mm/dd','']:
-        end = '2024/09/01'
+        end = datetime.date.today().isoformat()
     end = sql_date(end)
 
     if option[:2]=='hh':
@@ -815,7 +815,7 @@ def calccomparison(request, choice, tariffs):
     gasmult = request.POST.get('gasmult', '1.0')
     mult = float(gasmult) if type_id==1 else 1.0
     start = sql_date(request.GET.get('start', '2019-01-01'))
-    end = sql_date(request.GET.get('end','2024-07-31'))
+    end = sql_date(request.GET.get('end', datetime.date.today().isoformat()))
     end = min(end, datetime.datetime.today().strftime('%Y-%m-%d'))
     smid = get_sm_id(request)
     metric = request.POST.get('metric')
@@ -984,7 +984,7 @@ def analysisPage(request):
     smid = get_sm_id(request)
     if request.method=='GET':
         start = sql_date(request.GET.get('start', '2021/01/01'))
-        end = sql_date(request.GET.get('end','2024/08/31'))
+        end = sql_date(request.GET.get('end', datetime.date.today().isoformat()))
     else:
         start = sql_date(request.POST.get('startdate'))
         end = sql_date(request.POST.get('enddate'))

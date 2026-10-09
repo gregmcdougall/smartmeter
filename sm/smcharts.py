@@ -136,7 +136,7 @@ def consumptionPage(request, choice):
     smid = get_sm_id(request)
     type_id = type_ids[choice]
     start = sql_date(request.GET.get('start', '2018-01-01'))
-    end = sql_date(request.GET.get('end', '2025-01-01'))    
+    end = sql_date(request.GET.get('end', pd.Timestamp.today().strftime('%Y-%m-%d')))    
 
     if 'month' in request.GET:
         month = sql_month(request.GET.get('month'))
@@ -271,7 +271,7 @@ def costPage(request, choice):
     isfixed, pricestr = parsetariff(request, request.GET.get(prefix+'tariff'), type_id, vat)
     has_pricebands =  isfixed & (type_id==0) 
     start = sql_date(request.GET.get('start', '2018-01-01'))
-    end = sql_date(request.GET.get('end', '2025-01-01'))   
+    end = sql_date(request.GET.get('end', pd.Timestamp.today().strftime('%Y-%m-%d')))   
     if 'month' in request.GET:
         month = sql_month(request.GET.get('month'))
         if 'day' in request.GET:
@@ -481,7 +481,7 @@ def emissionsPage(request):
     smid = get_sm_id(request)
     url = request.get_full_path()
     start = sql_date(request.GET.get('start', '2018-01-01'))
-    end = sql_date(request.GET.get('end', '2025-01-01'))   
+    end = sql_date(request.GET.get('end', pd.Timestamp.today().strftime('%Y-%m-%d')))   
 
     if 'month' in request.GET:
         month = sql_month(request.GET.get('month'))
@@ -630,7 +630,7 @@ def netimportPage(request):
     
     smid = get_sm_id(request)
     start = sql_date(request.GET.get('start', '2019-01-01'))
-    end = sql_date(request.GET.get('end', '2025-12-01'))    
+    end = sql_date(request.GET.get('end', pd.Timestamp.today().strftime('%Y-%m-%d')))    
 
     if 'month' in request.GET:
         month = sql_month(request.GET.get('month'))

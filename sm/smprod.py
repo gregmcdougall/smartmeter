@@ -60,8 +60,8 @@ def checkRequest(request):
         return create_sm_page(request, content, 'Invalid Page')
 
     if smid is not None:
-        s = f"select account_id from sm_accounts where session_id= '{smid}' and active='1'"
-        account_id = loadDataFromDb(s)
+        s = "select account_id from sm_accounts where session_id= %s and active='1'"
+        account_id = loadDataFromDb(s, params=(smid,))
     else:
         account_id = []
     if len(account_id)==0:    
@@ -84,8 +84,8 @@ def checkRequest(request):
                 if tariff == 'SILVER-2017-1':
                     return getTariff(request, choice)
                 region = request.GET.get('region')
-                s = f"select var_id, granularity_id from sm_variables where product='{tariff}' and region='{region}' and type_id={type_id}"
-                s = loadDataFromDb(s)  
+                s = "select var_id, granularity_id from sm_variables where product=%s and region=%s and type_id=%s"
+                s = loadDataFromDb(s, params=(tariff, region, type_id))  
                 if len(s)==0:
                     return getTariff(request, choice)   
 
@@ -138,8 +138,8 @@ def homepage(request):
     urladmin = request.get_full_path().replace('home','admin',1)
     smid = get_sm_id(request) 
     if smid is not None:
-        sql = f"select type_id, first_period, last_period, source_id, region from sm_accounts where session_id= '{smid}' and active='1' order by type_id;"
-        df = loadDataFromDb(sql, returndf=True)
+        sql = "select type_id, first_period, last_period, source_id, region from sm_accounts where session_id= %s and active='1' order by type_id;"
+        df = loadDataFromDb(sql, returndf=True, params=(smid,))
     else:
         df = pd.DataFrame()
 
@@ -178,17 +178,17 @@ def seewhatwehave(request):
     smid = get_sm_id(request)
     if smid is None:
         return pd.DataFrame(), pd.DataFrame(), ''
-    df = loadDataFromDb(f"select * from sm_accounts where session_id = '{smid}' and active='1' order by type_id", returndf=True)
+    df = loadDataFromDb("select * from sm_accounts where session_id = %s and active='1' order by type_id", returndf=True, params=(smid,))
     df['type'] = df['type_id'].map({0: 'Electricity', 1: 'Gas', 2:'Electricity Export'})
     df['source_id'].fillna(0, inplace=True)
     df['source'] = df['source_id'].map({0: 'n3rgy', 1: 'Octopus'})
-    s = f"""
+    s = """
         select sm_accounts.account_id, sm_accounts.type_id, sm_periods.period from sm_accounts 
         left join sm_periods on sm_periods.period between sm_accounts.first_period and sm_accounts.last_period 
         left join sm_quantity on sm_quantity.period_id=sm_periods.period_id and sm_quantity.account_id= sm_accounts.account_id
-        where sm_quantity.quantity is null and sm_accounts.session_id='{smid}' and sm_accounts.active='1'
+        where sm_quantity.quantity is null and sm_accounts.session_id=%s and sm_accounts.active='1'
         """
-    df_gaps = loadDataFromDb(s, returndf=True)
+    df_gaps = loadDataFromDb(s, returndf=True, params=(smid,))
     df2 = df_gaps.groupby('account_id').count()
     df['gaps'] = df.account_id.map(df2.period)
     df.gaps.fillna(0, inplace=True)

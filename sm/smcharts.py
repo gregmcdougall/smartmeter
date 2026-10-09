@@ -6,7 +6,7 @@ import sys
 import pandas as pd
 import numpy as np
 
-from myutils.utils import (getConnection, loadDataFromDb)
+from myutils.utils import (getConnection, loadDataFromDb, sql_date, sql_month)
 from myutils.smutils import (adj_url, sidebarhtml, 
                             getRegion, getregions, menuitems, octopusmeters, n3rgymeters, get_sm_id, quantitystr,
                             parsetariff, get_type_id, getmode, create_sm_page, getTariff)
@@ -135,11 +135,11 @@ def nodata(request):
 def consumptionPage(request, choice):
     smid = get_sm_id(request)
     type_id = type_ids[choice]
-    start = request.GET.get('start', '2018-01-01')
-    end = request.GET.get('end','2025-01-01')    
+    start = sql_date(request.GET.get('start', '2018-01-01'))
+    end = sql_date(request.GET.get('end', '2025-01-01'))    
 
     if 'month' in request.GET:
-        month = request.GET.get('month')
+        month = sql_month(request.GET.get('month'))
         if 'day' in request.GET:
             day = int(request.GET.get('day'))
             start = month + '-{:02d}'.format(day)
@@ -189,7 +189,7 @@ def consumptionPage(request, choice):
         gaswarn = ''
 
     if 'month' in request.GET:
-        month = request.GET.get('month')
+        month = sql_month(request.GET.get('month'))
         if 'day' in request.GET:
             day = int(request.GET.get('day'))
             heading = 'Half-hourly {} on {}-{:02d}'.format(type.title(), month, day)
@@ -270,10 +270,10 @@ def costPage(request, choice):
     vat = 1 if type_id==2 else 1.05
     isfixed, pricestr = parsetariff(request, request.GET.get(prefix+'tariff'), type_id, vat)
     has_pricebands =  isfixed & (type_id==0) 
-    start = request.GET.get('start', '2018-01-01')
-    end = request.GET.get('end','2025-01-01')   
+    start = sql_date(request.GET.get('start', '2018-01-01'))
+    end = sql_date(request.GET.get('end', '2025-01-01'))   
     if 'month' in request.GET:
-        month = request.GET.get('month')
+        month = sql_month(request.GET.get('month'))
         if 'day' in request.GET:
             day = int(request.GET.get('day'))
             start = month + '-{:02d}'.format(day)
@@ -359,7 +359,7 @@ def costPage(request, choice):
  
 
     if 'month' in request.GET:
-        month = request.GET.get('month')
+        month = sql_month(request.GET.get('month'))
         if 'day' in request.GET:
             day = int(request.GET.get('day'))
             heading = 'Half-hourly {} on {}-{:02d}'.format(type.title(), month, day)
@@ -480,11 +480,11 @@ def costPage(request, choice):
 def emissionsPage(request):
     smid = get_sm_id(request)
     url = request.get_full_path()
-    start = request.GET.get('start', '2018-01-01')
-    end = request.GET.get('end','2025-01-01')   
+    start = sql_date(request.GET.get('start', '2018-01-01'))
+    end = sql_date(request.GET.get('end', '2025-01-01'))   
 
     if 'month' in request.GET:
-        month = request.GET.get('month')
+        month = sql_month(request.GET.get('month'))
         if 'day' in request.GET:
             day = int(request.GET.get('day'))
             start = month + '-{:02d}'.format(day)
@@ -534,7 +534,7 @@ def emissionsPage(request):
     data['prof_intensity'] = data.prof_emis/data.prof_qty
     data['actual_intensity'] = np.where(data.actual_qty==0, data.prof_intensity, data.actual_emis/data.actual_qty)
     if 'month' in request.GET:
-        month = request.GET.get('month')
+        month = sql_month(request.GET.get('month'))
         if 'day' in request.GET:
             data['prof_emis'] = data.prof_emis*data.actual_qty.sum()/data.prof_qty.sum()
             data['prof_qty'] = data.prof_qty*data.actual_qty.sum()/data.prof_qty.sum()
@@ -629,11 +629,11 @@ def emissionsPage(request):
 def netimportPage(request):
     
     smid = get_sm_id(request)
-    start = request.GET.get('start', '2019-01-01')
-    end = request.GET.get('end','2025-12-01')    
+    start = sql_date(request.GET.get('start', '2019-01-01'))
+    end = sql_date(request.GET.get('end', '2025-12-01'))    
 
     if 'month' in request.GET:
-        month = request.GET.get('month')
+        month = sql_month(request.GET.get('month'))
         if 'day' in request.GET:
             day = int(request.GET.get('day'))
             start = month + '-{:02d}'.format(day)
@@ -680,7 +680,7 @@ def netimportPage(request):
  
     #raise Exception(request.GET)
     if 'month' in request.GET:
-        month = request.GET.get('month')
+        month = sql_month(request.GET.get('month'))
         if 'day' in request.GET:
             day = int(request.GET.get('day'))
             heading = 'Half-hourly Net Import on {}-{:02d}'.format(month, day)

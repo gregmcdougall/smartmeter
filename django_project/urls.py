@@ -14,18 +14,15 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from django.conf.urls import url
-from . import view 
+from django.urls import path, re_path
+from . import view
 from forecasts import views as forecastviews
-from covidstats import views as covidstatsviews
 from sm import smviews
 
 urlpatterns = [
     path('', view.index, name='index'),
     path('robots.txt', smviews.robots_txt),
-    url(r'forecasts/*', forecastviews.index, name='forecasts'),
-    url(r'covidstats/*', covidstatsviews.index, name='covidstats'),
+    re_path(r'forecasts/*', forecastviews.index, name='forecasts'),
     path('sm/<slug:choice>', smviews.index, name='sm'),
     path('sm/', smviews.home, name='smhome'),
     path('smsql/', smviews.runsql, name='smsql')

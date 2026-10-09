@@ -10,7 +10,7 @@ from myutils.smutils import (adj_url, sidebarhtml,
                             getRegion, getregions, menuitems, octopusmeters, n3rgymeters,
                             loadSmData, deleteSmData, get_sm_id, isdemo, sm_log,
                             get_type_id, getmode, create_sm_page, getTariff,
-                            get_key, clean_key, set_key_cookie, KEY_SOURCES)
+                            get_key, clean_key, set_key_cookie, KEY_SOURCES, get_region)
 
 
 
@@ -36,7 +36,7 @@ def checkRequest(request):
             return set_key_cookie(output, request, source, clean_key(request.GET.get(param)))
 
     if request.GET.get('tariff','ignore')=='GO-18-06-12':
-        region = request.GET['region']
+        region = get_region(request)
         oldgotariffs = {'A': 14.1225, 'B': 13.4505, 'C': 14.7105, 'D': 14.6265, 'E': 13.7235, 'F': 12.9255, 'G': 13.965,
                      'H': 13.797, 'J': 14.3955, 'K': 14.0175,  'L': 14.2905, 'M': 13.314, 'N': 14.1855, 'P': 14.4585}
 
@@ -83,11 +83,11 @@ def checkRequest(request):
         else:
             isfixed = tariff.replace(',','').replace(':','').replace('-','').replace('.','').isnumeric()
             if (isfixed==0):
-                if 'region' not in request.GET:
+                region = get_region(request)
+                if region is None:
                     return getTariff(request, choice) 
                 if tariff == 'SILVER-2017-1':
                     return getTariff(request, choice)
-                region = request.GET.get('region')
                 s = "select var_id, granularity_id from sm_variables where product=%s and region=%s and type_id=%s"
                 s = loadDataFromDb(s, params=(tariff, region, type_id))  
                 if len(s)==0:

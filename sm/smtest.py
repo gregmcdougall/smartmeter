@@ -10,7 +10,7 @@ import json
 
 from myutils.utils import (getConnection, loadDataFromDb, sql_date, UserError, esc)
 from myutils.smutils import (adj_url, sidebarhtml, getregions, get_sm_id, 
-                            quantitystr, parsetariff, create_sm_page, get_type_id, get_key)
+                            quantitystr, parsetariff, create_sm_page, get_type_id, get_key, get_region)
 
 
 def getregionselector(region):
@@ -177,7 +177,7 @@ def billsPage(request, choice):
     tariff = request.GET.get(f'{prefix}tariff', '0.0')
     standingcharge = request.GET.get(f'{prefix}sc','0.0')
     price = None
-    region = request.GET.get('region', None)
+    region = get_region(request)
     gasmult = request.GET.get('gasmult','1.0')
     start = request.GET.get('start', '2023/01/01')
     end = request.GET.get('end', '2023/08/31')
@@ -428,7 +428,7 @@ def get_savecsvPage(choice, request):
         prefix = ['', 'gas', 'export'][type_id]
         tariff = request.GET.get(f'{prefix}tariff', '0.0')
         price = None
-        region = request.GET.get('region', None)        
+        region = get_region(request)        
         regionselector = getregionselector(region)
         tariffselector, price, pricedisplay, regiondisplay = gettariffselector(type_id, tariff, price)
         VAT = ', incl VAT' if type_id in [0,1] else ''
@@ -872,7 +872,7 @@ def tariffcomparison(request, choice):
     heading = '{} Tariff Comparison'.format(type_label)
     prefix = ['', 'gas', 'export'][type_id]
     tariff = request.GET.get(f'{prefix}tariff', '0.0')
-    region = request.GET.get('region', 'C')
+    region = get_region(request, 'C')
     gasmult = request.GET.get('gasmult','1')
 
 
@@ -990,7 +990,7 @@ def analysisPage(request):
         end = sql_date(request.POST.get('enddate'))
 
 
-    region = request.GET.get('region','C')
+    region = get_region(request, 'C')
     _, pricestr = parsetariff(request, 'AGILE-18-02-21', 0, 1.05, region=region)
 
     endstr = f"""
@@ -1544,7 +1544,7 @@ def buildprofilePage(request):
             options[3][i] = request.POST.get(f"range{i}")
         calcs = calcprofileprice(request, options)
     else:
-        region = request.GET.get('region', None)   
+        region = get_region(request)   
         calcs = ''
 
 

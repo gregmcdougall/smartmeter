@@ -77,24 +77,6 @@ def home(request):
     url = '?'.join(url)
     return redirect(url)
 
-def runsql(request):
-    try:
-        if 'password' not in request.POST:
-            return HttpResponse('Missing Password')
-        password = request.POST.get('password')
-        from myutils.keys import READONLY_USERS 
-        from myutils.utils import queryreadonly
-        if password not in READONLY_USERS:
-            return HttpResponse('Password not authorised - please contact Guy Lipman')
-        if 'sqlquery' not in request.POST:
-            return HttpResponse('Missing sqlquery')
-        output = queryreadonly(request.POST.get('sqlquery'))
-        if len(output)>100000:
-            return HttpResponse('Too much data to return')
-        return HttpResponse(output)
-    except Exception as err:    
-        return error_response(err)
-
 def bot_to_reject(request):
     bots = ['SemrushBot', 'AhrefsBot', 'PetalBot', 'Bot']
     bots = ['Bot', 'externalhit', 'Bytespider']

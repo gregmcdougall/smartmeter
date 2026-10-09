@@ -4,7 +4,7 @@ import datetime
 import requests
 import os
 
-from myutils.utils import loadDataFromDb
+from myutils.utils import loadDataFromDb, sql_uuid
 
 START = '201901010000'    
 
@@ -18,8 +18,8 @@ def get_type_id(choice):
 
 
 def getmode(smid):
-        s = f"select type_id from sm_accounts where session_id = '{smid}' and active='1'"
-        type_ids = loadDataFromDb(s)    
+        s = "select type_id from sm_accounts where session_id = %s and active='1'"
+        type_ids = loadDataFromDb(s, params=(smid,))
         mode = ['0']*3
         for j in type_ids:
             mode[j[0]] = '1'
@@ -533,13 +533,13 @@ def getDataFromN3RGY(key, type_id, n3adj, first=None, last=None):
 
 
 def deleteSmData(smid):
-    s = f"""
-    update sm_accounts set active='0' where session_id='{smid}';
-    delete from sm_quantity 
-    where account_id not in 
+    s = """
+    update sm_accounts set active='0' where session_id=%s;
+    delete from sm_quantity
+    where account_id not in
        (select account_id from sm_accounts where active='1');
     """
-    _ = loadDataFromDb(s)
+    _ = loadDataFromDb(s, params=(smid,))
 
 def isdemo(request):
     key = request.GET.get('octopus', request.GET.get('n3rgy',None))
@@ -552,7 +552,11 @@ def get_sm_id(request, createifnone=False):
     if (key is None) or (key[-6:] in ['RMePtm', '64E78B']):
         return demokey
     if f'sm_id_{key[-3:]}' in request.COOKIES:
-        return request.COOKIES[f'sm_id_{key[-3:]}']
+        # The cookie is user-controlled and ends up in SQL, so only accept a well-formed uuid
+        try:
+            return sql_uuid(request.COOKIES[f'sm_id_{key[-3:]}'])
+        except ValueError:
+            pass
     if createifnone:
         import uuid
         return str(uuid.uuid4())
@@ -579,34 +583,30 @@ def loadSmData(request, type_id):
                             ['n3rgy', 'Octopus'][source_id])
         raise Exception(estr)
 
-    s = f"select * from sm_accounts where session_id='{smid}' and type_id={type_id} and active='1' limit 1"
-    accounts = loadDataFromDb(s, returndf=True)
+    s = "select * from sm_accounts where session_id=%s and type_id=%s and active='1' limit 1"
+    accounts = loadDataFromDb(s, returndf=True, params=(smid, type_id))
     if len(accounts):
-        account_id = accounts['account_id'].values[0]
+        account_id = int(accounts['account_id'].values[0])
         s = "delete from sm_quantity where account_id={}".format(account_id)
         _ = loadDataFromDb(s)
         s = """
         update sm_accounts
-        set first_period='{}', last_period='{}', last_updated=CURRENT_TIMESTAMP, session_id='{}'
-        where account_id={} and type_id={}  and active='1'; 
+        set first_period=%s, last_period=%s, last_updated=CURRENT_TIMESTAMP, session_id=%s
+        where account_id=%s and type_id=%s  and active='1';
         """
-        s = s.format(df['timestamp'].iloc[0].strftime('%Y-%m-%d %H:%M'),
-                     df['timestamp'].iloc[-1].strftime('%Y-%m-%d %H:%M'), 
-                     smid, account_id, type_id)
-        _ = loadDataFromDb(s)
+        params = (df['timestamp'].iloc[0].strftime('%Y-%m-%d %H:%M'),
+                  df['timestamp'].iloc[-1].strftime('%Y-%m-%d %H:%M'),
+                  smid, account_id, type_id)
+        _ = loadDataFromDb(s, params=params)
     else:
-        if region is not None:
-            region = "'{}'".format(region)
-        else:
-            region = 'Null'
         s = """
         insert into sm_accounts (type_id, first_period, last_period, last_updated, source_id, region, session_id, active)
-        values ({}, '{}', '{}', CURRENT_TIMESTAMP, {}, {}, '{}', '1') returning account_id;"""
-        s = s.format(type_id,
-                    df['timestamp'].iloc[0].strftime('%Y-%m-%d %H:%M'),
-                    df['timestamp'].iloc[-1].strftime('%Y-%m-%d %H:%M'),
-                    source_id, region, smid )
-        account_id = loadDataFromDb(s)
+        values (%s, %s, %s, CURRENT_TIMESTAMP, %s, %s, %s, '1') returning account_id;"""
+        params = (type_id,
+                  df['timestamp'].iloc[0].strftime('%Y-%m-%d %H:%M'),
+                  df['timestamp'].iloc[-1].strftime('%Y-%m-%d %H:%M'),
+                  source_id, region, smid)
+        account_id = loadDataFromDb(s, params=params)
         account_id = account_id[0][0]
     s = """
     insert into sm_quantity (account_id, period_id, quantity) 
@@ -621,9 +621,10 @@ def loadSmData(request, type_id):
 
 
 def quantitystr(smid, type_id):
-    return f"""select period_id, quantity from sm_quantity 
-            inner join sm_accounts on sm_quantity.account_id=sm_accounts.account_id  
-                where session_id='{smid}' and type_id={type_id} and active='1'"""
+    # Returns a fragment for composing into larger queries, so validate rather than parameterise
+    return f"""select period_id, quantity from sm_quantity
+            inner join sm_accounts on sm_quantity.account_id=sm_accounts.account_id
+                where session_id='{sql_uuid(smid)}' and type_id={int(type_id)} and active='1'"""
 
 def parsetariff(request, tariff, type_id, vat, **kwargs):
     isfixed = tariff.replace(',','').replace(':','').replace('-','').replace('.','').isnumeric()
@@ -647,8 +648,8 @@ def parsetariff(request, tariff, type_id, vat, **kwargs):
         return isfixed, pricestr
     else:
         region = kwargs.get('region', None) or request.GET.get('region')
-        s = f"select var_id, granularity_id from sm_variables where product='{tariff}' and region='{region}' and type_id={type_id}"
-        s = loadDataFromDb(s)
+        s = "select var_id, granularity_id from sm_variables where product=%s and region=%s and type_id=%s"
+        s = loadDataFromDb(s, params=(tariff, region, type_id))
         if len(s):
             var_id = s[0][0]
             granularity_id = s[0][1]
@@ -718,16 +719,12 @@ def sm_log(request, choice, smid=None):
         else:
             smid = get_sm_id(request)
 
-    if smid is None:
-        smid = 'Null'
-    else:
-        smid = f"'{smid}'"
-
-    s = f"""
-    insert into sm_log (datetime, choice, method, session_id, url, http_user_agent) values 
-    (CURRENT_TIMESTAMP, '{choice}', {method}, {smid}, '{url[:120]}', '{request.META.get('HTTP_USER_AGENT')[:120]}');
+    agent = request.META.get('HTTP_USER_AGENT')
+    s = """
+    insert into sm_log (datetime, choice, method, session_id, url, http_user_agent) values
+    (CURRENT_TIMESTAMP, %s, %s, %s, %s, %s);
     """
-    loadDataFromDb(s)
+    loadDataFromDb(s, params=(choice, method, smid, url[:120], agent[:120] if agent else None))
 
 
 def sidebarhtml(request):

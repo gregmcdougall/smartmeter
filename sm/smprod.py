@@ -5,7 +5,7 @@ import sys
 import pandas as pd
 import numpy as np
 
-from myutils.utils import (getConnection, loadDataFromDb, UserError)
+from myutils.utils import (getConnection, loadDataFromDb, UserError, esc)
 from myutils.smutils import (adj_url, sidebarhtml, 
                             getRegion, getregions, menuitems, octopusmeters, n3rgymeters,
                             loadSmData, deleteSmData, get_sm_id, isdemo, sm_log,
@@ -391,12 +391,12 @@ def adminPage(request):
                 if isinstance(df, tuple):
                     s += '<P><B>Cannot retrieve data.</B> It may be that you misentered your account details. You should enter the combination of your account number and your security key, with no characters in between. '
                     if df[0]==404:
-                        s += f'The Octopus API responded that it could not recognise account number {key[:10]}. '
+                        s += f'The Octopus API responded that it could not recognise account number {esc(key[:10])}. '
                         s += 'This should be your account number, eg A-ABCD1234. You can find it on your bill or your Octopus webpage. '
                     elif df[0]==401:
-                        s += f'The Octopus API responded with a security error. This may mean that your security key {key[10:]} was wrong. '
+                        s += f'The Octopus API responded with a security error. This may mean that your security key {esc(key[10:])} was wrong. '
                         s += 'You should be able to find it on the <A HREF="https://octopus.energy/dashboard/developer/" target="_blank">developer page</A> of the Octopus website. '
-                        s += f'Alternatively, it may be that this is merely the wrong security key for the account {key[:10]}. ' 
+                        s += f'Alternatively, it may be that this is merely the wrong security key for the account {esc(key[:10])}. ' 
                     else:
                         s += f'Unknown error connecting to your account: {df[1]}. ' 
                 elif df.shape[0]==0:

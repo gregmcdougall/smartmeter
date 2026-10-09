@@ -8,7 +8,7 @@ import datetime
 import requests
 import json
 
-from myutils.utils import (getConnection, loadDataFromDb, sql_date, UserError)
+from myutils.utils import (getConnection, loadDataFromDb, sql_date, UserError, esc)
 from myutils.smutils import (adj_url, sidebarhtml, getregions, get_sm_id, 
                             quantitystr, parsetariff, create_sm_page, get_type_id)
 
@@ -267,11 +267,11 @@ def billsPage(request, choice):
     """
     s = s.format(regionselector=regionselector, 
                  tariffselector=tariffselector,
-                 price=price, gasmult=gasmult,
+                 price=esc(price), gasmult=esc(gasmult),
                  gasmultdisplay='flex' if type_id==1 else 'none',
-                 url=request.get_full_path(), standingcharge=standingcharge,
+                 url=request.get_full_path(), standingcharge=esc(standingcharge),
                  pricedisplay=pricedisplay, regiondisplay=regiondisplay,
-                 start=start, end=end, VAT=VAT)
+                 start=esc(start), end=esc(end), VAT=VAT)
 
 
     s+= """
@@ -468,7 +468,7 @@ def get_savecsvPage(choice, request):
                     <div class="form-group row" id="price" style="display:{pricedisplay};">
                     <label for="inputEmail3" class="col-sm-2 col-form-label">Price (p/kwh{VAT})</label>
                     <div class="col-sm-10">
-                    <input type="text" class="form-control" name="price" value="{price}">
+                    <input type="text" class="form-control" name="price" value="{esc(price)}">
                     </div>
                     </div>
 
@@ -496,7 +496,7 @@ def get_savecsvPage(choice, request):
                 <div class="form-group row" id="gasmult" style="display:{gasmultdisplay};">
                 <label for="inputEmail3" class="col-sm-2 col-form-label">Gas Multiplier for SMETS2</label>
                 <div class="col-sm-10">
-                <input type="text" class="form-control" name="gasmult" value="{gasmult}">
+                <input type="text" class="form-control" name="gasmult" value="{esc(gasmult)}">
                 </div>
                 </div>
 
@@ -948,7 +948,7 @@ def tariffcomparison(request, choice):
     <div class="form-group row" id="gasmult" style="display:{gasmultdisplay};">
     <label for="inputEmail3" class="col-sm-2 col-form-label">Gas Multiplier for SMETS2</label>
     <div class="col-sm-10">
-      <input type="text" class="form-control" name="gasmult" value="{gasmult}">
+      <input type="text" class="form-control" name="gasmult" value="{esc(gasmult)}">
     </div>
     </div>
     <P>Please include up to 5 tariffs. These can be time varying or fixed. Fixed tariffs should include VAT for electricity and gas consumption.</P>
@@ -959,7 +959,7 @@ def tariffcomparison(request, choice):
         <div class="form-group row" id="tariff">
         <label for="inputEmail3" class="col-sm-2 col-form-label" >Tariff {i+1}</label>
         <div class="col-sm-10">
-        <input type="text" class="form-control" name="tariff{i}" value="{j}">  
+        <input type="text" class="form-control" name="tariff{i}" value="{esc(j)}">  
         </div>
         </div>
         """
@@ -1276,14 +1276,14 @@ def octobillPage(request):
     <div class="form-group row">
     <label for="inputEmail3" class="col-sm-2 col-form-label">Start Date (yyyy/mm/dd)</label>
     <div class="col-sm-10">
-      <input type="string" class="form-control" name="start" value="{start}">
+      <input type="string" class="form-control" name="start" value="{esc(start)}">
     </div>
     </div>
  
     <div class="form-group row">
     <label for="inputEmail3" class="col-sm-2 col-form-label">End Date (yyyy/mm/dd)</label>
     <div class="col-sm-10">
-      <input type="text" class="form-control" name="end" value="{end}">
+      <input type="text" class="form-control" name="end" value="{esc(end)}">
     </div>
     </div>
 
@@ -1570,7 +1570,7 @@ def buildprofilePage(request):
                 <label for="inputkWh">kWh</label>"""
 
     for i, o in enumerate(options[0]):
-        s += f"""<input type="text" class="form-control" name="inputkWh{i}" value="{o}">
+        s += f"""<input type="text" class="form-control" name="inputkWh{i}" value="{esc(o)}">
         """        
 
     s += f"""   </div>
@@ -1578,7 +1578,7 @@ def buildprofilePage(request):
                 <label for="inputnumh">Over (hrs)</label>
                 """
     for i, o in enumerate(options[1]):
-        s += f"""<input type="text" class="form-control" name="inputnumh{i}" value="{o}">
+        s += f"""<input type="text" class="form-control" name="inputnumh{i}" value="{esc(o)}">
            """
 
     s += f"""   </div>
@@ -1605,7 +1605,7 @@ def buildprofilePage(request):
                     <label for="inputRange">HH:MM-HH:MM</label>
           """
     for i, o in enumerate(options[3]):
-        s += f"""   <input type="text" class="form-control" name="range{i}" value="{o}">
+        s += f"""   <input type="text" class="form-control" name="range{i}" value="{esc(o)}">
              """
 
     s += """    </div>

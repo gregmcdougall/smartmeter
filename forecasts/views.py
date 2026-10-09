@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import json
 import pickle
-from myutils.utils import getConnection, loadDataFromDb, error_response, UserError
+from myutils.utils import getConnection, loadDataFromDb, error_response, UserError, esc
 
 
 
@@ -150,7 +150,7 @@ def inner(request):
             url = url + '&before=2020-12-31T12:00'
         else:
             url = url + '?before=2020-12-31T12:00'
-        retail += f'''<P>If you want to know how historic forecasts performed, you can see the latest forecast before a past datetime, eg {url}</P>'''
+        retail += f'''<P>If you want to know how historic forecasts performed, you can see the latest forecast before a past datetime, eg {esc(url)}</P>'''
     if 'json' in request.GET:
         myobj = []
         for _, j in data.iterrows():

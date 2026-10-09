@@ -10,7 +10,7 @@ import json
 
 from myutils.utils import (getConnection, loadDataFromDb, sql_date, UserError, esc)
 from myutils.smutils import (adj_url, sidebarhtml, getregions, get_sm_id, 
-                            quantitystr, parsetariff, create_sm_page, get_type_id)
+                            quantitystr, parsetariff, create_sm_page, get_type_id, get_key)
 
 
 def getregionselector(region):
@@ -1257,7 +1257,9 @@ def get_transactions(t, hasexport):
     return transactions
 
 def octobillPage(request):
-    key = request.GET.get('octopus')
+    source, key = get_key(request)
+    if source != 'octopus':
+        raise UserError('Enter your Octopus key on the Admin page first.')
 
     s = """
         <P>The Octopus balance history is quite hard to follow, especially if you have had bills recalculated. This page pulls in 
@@ -1391,7 +1393,9 @@ def accountgraphql(key):
     return s
 
 def octoaccountpage(request):
-    key = request.GET.get('octopus')
+    source, key = get_key(request)
+    if source != 'octopus':
+        raise UserError('Enter your Octopus key on the Admin page first.')
     s = """
     <P>This website tries to pull in the relevant information from Octopus, although it sometimes has problems when people have multiple 
     meters with weird histories. This page displays some information about all the meters linked to the account that may be useful for debugging issues.</P>"""

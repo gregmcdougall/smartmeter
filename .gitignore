@@ -4,3 +4,6 @@ __init__.py
 django_project/static/*
 scripts/Default*.csv
 scripts/mixergy.py
+django_project/local_settings.py
+forecasts/cache.pkl
+.venv/

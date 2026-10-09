@@ -667,12 +667,12 @@ def parsetariff(request, tariff, type_id, vat, **kwargs):
 def adj_url(url, remove, change):
     import re
     for k in remove:
-        p = re.compile('[&\?]' + k + '[^&]*')
+        p = re.compile(r'[&\?]' + k + '[^&]*')
         r = p.search(url)
         if r is not None:
             url = url.replace(r.group(), '')
     for k in change:
-        p = re.compile('[&\?]' + k[0] + '[^&]*')
+        p = re.compile(r'[&\?]' + k[0] + '[^&]*')
         r = p.search(url)
         if r is not None:
             if k[1] is None:

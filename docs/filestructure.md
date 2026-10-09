@@ -8,9 +8,6 @@ django_project/
     wsgi.py
     statics/ sortable-0.8.0/
 
-covidstats/ (separate project)
-    views.py
-
 forecasts/ (separate project)
     views.py    l
     template.html 

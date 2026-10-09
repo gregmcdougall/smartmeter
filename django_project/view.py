@@ -13,8 +13,6 @@ helloWorld = """
 
     <p>This a Python-based webserver in which I am testing out various bits of functionality.</p>
     <UL>
-    <LI><A HREF="covidstats/deaths">Covid Statistics - Deaths</A></LI>
-    <LI><A HREF="covidstats/cases">Covid Statistics - Cases</A></LI>
     <LI><A HREF="forecasts?region=C">Electricity Price Forecasts</A>
     <LI><A HREF="sm/home">Smart Meter Data Viewer</A>
     </div>

@@ -5,7 +5,7 @@ import sys
 import pandas as pd
 sys.path.append("/home/django/django_project/")
 from sm.smviews import inner
-from covidstats.views import index
+from forecasts.views import index
 
 
 class TestRequest:

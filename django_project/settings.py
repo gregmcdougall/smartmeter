@@ -81,3 +81,9 @@ STATICFILES_DIRS = (
 )
 
 STATIC_ROOT = '/static/'
+
+# Local development overrides (see local_settings.example.py)
+try:
+    from .local_settings import *
+except ImportError:
+    pass

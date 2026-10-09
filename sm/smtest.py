@@ -1016,7 +1016,7 @@ def analysisPage(request):
 
     df1 = df[['actual_qty']].copy()
     df1['bin'] = pd.qcut(df1.actual_qty.rank(method='first'), 20)
-    df1 = df1.groupby('bin')
+    df1 = df1.groupby('bin', observed=False)
     df1 = np.hstack([df1.min().values, df1.max().values, df1.sum().values])
     df1[:,2]/=df1[:,2].sum()
 
@@ -1036,7 +1036,7 @@ def analysisPage(request):
     quantity1 = str([f'{100*d.pct:.1f}' for _, d in df1a.iterrows()])
     print(df1a)
 
-    df2 = df.groupby(['local_time']).mean()
+    df2 = df.groupby(['local_time']).mean(numeric_only=True)
     df2['actual_min'] = df.groupby(['local_time']).min().actual_qty
     df2['actual_max'] = df.groupby(['local_time']).max().actual_qty
     
@@ -1059,7 +1059,7 @@ def analysisPage(request):
     df3 = df.copy()
     df3['actual_cost'] = df3.actual_qty*df3.price
     df3['prof_cost'] = df3.prof_qty*df3.price
-    df3 = df3.groupby(['month']).sum()
+    df3 = df3.groupby(['month']).sum(numeric_only=True)
     df3['actual_price'] = df3.actual_cost/df3.actual_qty
     df3['prof_price'] = df3.prof_cost/df3.prof_qty
     df3.index = df3.index.strftime('%Y-%m')
@@ -1486,7 +1486,7 @@ def calcprofileprice(request, options):
     df['week'] = ((df.local_date-datetime.date.fromisoformat('2020-06-01'))/datetime.timedelta(days=1)/7).astype(int)
     df = df.sort_values('period_id')
 
-    df2 = df.groupby(['week','local_date','local_time']).mean()['value']
+    df2 = df.groupby(['week','local_date','local_time']).mean(numeric_only=True)['value']
     df2 = df2.unstack('local_time').fillna(5.0)
     df3 = pd.DataFrame(0.0, index=df2.index, columns=['volume','cost'])
     for ix in df3.index:

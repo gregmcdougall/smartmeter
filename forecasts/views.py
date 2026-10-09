@@ -11,15 +11,15 @@ from myutils.utils import getConnection, loadDataFromDb
 
 
 def get_prices(region, product, after_date):
-    s = f'''
-    select concat(local_date, ' ', local_time) dt, value from sm_hh_variable_vals v 
+    s = '''
+    select concat(local_date, ' ', local_time) dt, value from sm_hh_variable_vals v
     inner join sm_periods on v.period_id=sm_periods.period_id
     inner join sm_tariffs on sm_tariffs.var_id=v.var_id
-    where product='{product}' and region='{region}' 
-    and concat(sm_periods.local_date, ' ', sm_periods.local_time)>='{after_date.strftime('%Y-%m-%d %H:%M')}'
+    where product=%s and region=%s
+    and concat(sm_periods.local_date, ' ', sm_periods.local_time)>=%s
     order by dt
     '''
-    df2 = loadDataFromDb(s, returndf=True)
+    df2 = loadDataFromDb(s, returndf=True, params=(product, region, after_date.strftime('%Y-%m-%d %H:%M')))
 
     #raise Exception(df2.iloc[40:60])
     df2 = pd.Series(0.5*(df2['value'].iloc[0::2].values + df2['value'].iloc[1::2].values), index=df2['dt'].iloc[0::2])    
@@ -28,7 +28,8 @@ def get_prices(region, product, after_date):
 
 def inner(request):
     region = request.GET.get('region', 'W').upper()
-    before = request.GET.get('before', pd.Timestamp.now().isoformat())   
+    # Normalise to an ISO timestamp, since it is formatted into the queries below
+    before = pd.Timestamp(request.GET.get('before', pd.Timestamp.now().isoformat())).isoformat()
     ph = ('ph' in request.GET)
     v2 = (pd.Timestamp(before) > pd.Timestamp('2024-06-01T00:00'))
     slope = float(request.GET.get('slope', '80'))

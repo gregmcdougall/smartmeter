@@ -8,7 +8,7 @@ import datetime
 import requests
 import json
 
-from myutils.utils import (getConnection, loadDataFromDb )
+from myutils.utils import (getConnection, loadDataFromDb, sql_date)
 from myutils.smutils import (adj_url, sidebarhtml, getregions, get_sm_id, 
                             quantitystr, parsetariff, create_sm_page, get_type_id)
 
@@ -65,8 +65,8 @@ def calculatebill(choice, request):
     standingcharge = float(request.POST.get('standingcharge'))
     standingcharge /= vat
 
-    start = request.POST.get('startdate')
-    end = request.POST.get('enddate')     
+    start = sql_date(request.POST.get('startdate'))
+    end = sql_date(request.POST.get('enddate'))
     numdays = (pd.Timestamp(end)-pd.Timestamp(start)).days+1
     smid = get_sm_id(request)
 
@@ -347,9 +347,11 @@ def savetocsv(request, type_id):
     start = request.POST.get('startdate')
     if start in ['yyyy/mm/dd', '']:
         start = '2019/01/01'
+    start = sql_date(start)
     end = request.POST.get('enddate')    
     if end in ['yyyy/mm/dd','']:
         end = '2024/09/01'
+    end = sql_date(end)
 
     if option[:2]=='hh':
         cols = {'q': ', quantity ', 'p': ', price', 'e': ', price', 'q_p': ', quantity, price ','q_e': ', quantity, price'}[option[3:]]
@@ -687,12 +689,12 @@ def savelogtocsv(request):
         extra += ' and session_id is not Null '
     s = f"""
     select id, datetime, method, choice, session_id, url, http_user_agent
-    from sm_log where date(datetime-Interval '3 hours')='{date}'
+    from sm_log where date(datetime-Interval '3 hours')=%s
     {extra}
     order by id desc;
     """
     
-    df = loadDataFromDb(s, returndf=True)
+    df = loadDataFromDb(s, returndf=True, params=(date,))
     df['datetime'] = pd.DatetimeIndex(df['datetime']).strftime('%Y-%m-%dT%H:%M:%S.%f')
     df['method'] = df['method'].map({0: 'GET', 1: 'POST'})
 
@@ -812,8 +814,8 @@ def calccomparison(request, choice, tariffs):
     region = request.POST.get('region')
     gasmult = request.POST.get('gasmult', '1.0')
     mult = float(gasmult) if type_id==1 else 1.0
-    start = request.GET.get('start', '2019-01-01')
-    end = request.GET.get('end','2024-07-31')
+    start = sql_date(request.GET.get('start', '2019-01-01'))
+    end = sql_date(request.GET.get('end','2024-07-31'))
     end = min(end, datetime.datetime.today().strftime('%Y-%m-%d'))
     smid = get_sm_id(request)
     metric = request.POST.get('metric')
@@ -981,11 +983,11 @@ def analysisPage(request):
 
     smid = get_sm_id(request)
     if request.method=='GET':
-        start = request.GET.get('start', '2021/01/01')
-        end = request.GET.get('end','2024/08/31') 
+        start = sql_date(request.GET.get('start', '2021/01/01'))
+        end = sql_date(request.GET.get('end','2024/08/31'))
     else:
-        start = request.POST.get('startdate')
-        end = request.POST.get('enddate')
+        start = sql_date(request.POST.get('startdate'))
+        end = sql_date(request.POST.get('enddate'))
 
 
     region = request.GET.get('region','C')
@@ -1472,8 +1474,8 @@ def calcprofileprice(request, options):
 
     output += '</TABLE>'
 
-    q = f"select var_id, granularity_id from sm_variables where product='AGILE-18-02-21' and region='{region}'"
-    q = loadDataFromDb(q)
+    q = "select var_id, granularity_id from sm_variables where product='AGILE-18-02-21' and region=%s"
+    q = loadDataFromDb(q, params=(region,))
     if len(s):
         var_id = q[0][0]
     else:

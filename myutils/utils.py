@@ -25,11 +25,12 @@ def getConnection():
     cur = conn.cursor()
     return conn, cur
 
-def loadDataFromDb(sqlstr, returndf=False):
+def loadDataFromDb(sqlstr, returndf=False, params=None):
+    # Pass user-supplied values via params (with %s placeholders) rather than formatting them into sqlstr
     if sqlstr[-1]!=';':
         sqlstr += ';'
     conn, cur = getConnection()
-    cur.execute(sqlstr)
+    cur.execute(sqlstr, params)
     conn.commit()
     try:
         output = cur.fetchall()
@@ -39,6 +40,31 @@ def loadDataFromDb(sqlstr, returndf=False):
         output = cur.statusmessage
     conn.close()
     return output
+
+# Validators for user-supplied values that have to be formatted into SQL text, because they go into
+# query fragments that are composed before execution. Each returns the value if valid, else raises ValueError.
+
+def sql_uuid(value):
+    import uuid
+    try:
+        return str(uuid.UUID(str(value)))
+    except ValueError:
+        raise ValueError('Invalid session id')
+
+def sql_date(value):
+    import re
+    if not (isinstance(value, str) and re.fullmatch(r'\d{4}[-/]\d{2}[-/]\d{2}', value)):
+        raise ValueError('Invalid date - dates should be in the format yyyy-mm-dd')
+    datetime.date(int(value[:4]), int(value[5:7]), int(value[8:10]))
+    return value
+
+def sql_month(value):
+    import re
+    if not (isinstance(value, str) and re.fullmatch(r'\d{4}-\d{2}', value)):
+        raise ValueError('Invalid month - months should be in the format yyyy-mm')
+    datetime.date(int(value[:4]), int(value[5:7]), 1)
+    return value
+
 
 def loadfromdbremote(sqlstr, returndf=False):
     url = 'https://energy.guylipman.com/smsql/'

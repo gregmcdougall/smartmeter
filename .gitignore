@@ -8,3 +8,7 @@ django_project/local_settings.py
 forecasts/cache.pkl
 .venv/
 .claude/
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json
